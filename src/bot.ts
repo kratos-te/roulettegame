@@ -40,6 +40,12 @@ const allEffects: Effect[] = [
   },
 ];
 
+let flag = true;
+let count = 1;
+const player: string[] = ["player 1"];
+let turn = 0;
+let clicked: string = "";
+
 const effectCallbackCodeAccessor = (effectCode: TextEffectVariant) =>
   `effect-${effectCode}`;
 
@@ -195,9 +201,9 @@ bot.command("start", replyWithIntro);
 
 //Handle start battle with text
 
-const joinGameBtn = new InlineKeyboard().text("Join Game");
+const joinGameBtn = [[{ text: "Join Game", callback_data: "join" }]];
 
-const buttons = [
+const gameButtons = [
   [
     { text: "Pull Trigger", callback_data: "button1" },
     { text: "Pass", callback_data: "button2" },
@@ -205,47 +211,103 @@ const buttons = [
   ],
 ];
 
-// bot.command("revolver", async (ctx) => {
-//   const reply = await ctx.reply("Input Cost");
+const finalBtn = new InlineKeyboard().text("Processing prize..");
 
-//   const countdownSeconds = 60;
+bot.on("callback_query", async (ctx: any) => {
+  const buttonClicked = ctx.callbackQuery?.data;
 
-//   let remainingSeconds = countdownSeconds;
-//   const replyMessage = await ctx.reply("Hello, Created Game", {
-//     reply_markup: joinGameBtn,
-//   });
+  if (buttonClicked === "button1") {
+    turn++;
+    if (turn >= player.length) {
+      ctx.reply(
+        `Game finished
+    Cost: 10$
+    Winners: player 1
+    `,
+        {
+          reply_markup: finalBtn,
+        }
+      );
+    } else {
+      clicked = "[Pull Trigger]";
+      ctx.reply(
+        `
+      Playing Game
+            Cost: 10$
+            Players: ${player}
+            Turn: ${player[turn]}
+            Clicked: ${clicked}`,
 
-//   const countdownInterval = setInterval(() => {
-//     remainingSeconds--;
-//     if (remainingSeconds > 0) {
-//       bot.api.editMessageText(
-//         ctx.chat.id,
-//         replyMessage.message_id,
-//         `Hello, Created Game\nGame Starts in ${remainingSeconds} seconds`,
-//         {
-//           reply_markup: joinGameBtn,
-//         }
-//       );
-//     } else {
-//       clearInterval(countdownInterval);
-//       bot.api.editMessageText(
-//         ctx.chat.id,
-//         replyMessage.message_id,
-//         `Game Over!`,
-//         {
-//           reply_markup: { inline_keyboard: buttons },
-//         }
-//       );
-//     }
-//   }, 1000);
-// });
+        {
+          reply_markup: { inline_keyboard: gameButtons },
+        }
+      );
+    }
+  } else if (buttonClicked === "button2") {
+    turn++;
+    if (turn >= player.length) {
+      ctx.reply(
+        `Game finished
+    Cost: 10$
+    Winners: player 1
+    `,
+        {
+          reply_markup: finalBtn,
+        }
+      );
+    } else {
+      clicked = "[Pass]";
+      ctx.reply(
+        `
+    Playing Game
+          Cost: 10$
+          Players: ${player}
+          Turn: ${player[turn]}
+          Clicked: ${clicked}`,
+
+        {
+          reply_markup: { inline_keyboard: gameButtons },
+        }
+      );
+    }
+  } else if (buttonClicked === "button3") {
+    turn++;
+    if (turn >= player.length) {
+      ctx.reply(
+        `Game finished
+    Cost: 10$
+    Winners: player 1
+    `,
+        {
+          reply_markup: finalBtn,
+        }
+      );
+    } else {
+      clicked = "[Spin Chamber]";
+      ctx.reply(
+        `
+    Playing Game
+          Cost: 10$
+          Players: ${player}
+          Turn: ${player[turn]}
+          Clicked: ${clicked}`,
+
+        {
+          reply_markup: { inline_keyboard: gameButtons },
+        }
+      );
+    }
+  } else if (buttonClicked === "join") {
+    count++;
+    player.push(" player " + count.toString());
+  }
+});
 
 bot.on("message", async (ctx) => {
   const countdownSeconds = 60;
-
   let remainingSeconds = countdownSeconds;
   const replyMessage = await ctx.reply("Hello, Created Game", {
-    reply_markup: joinGameBtn,
+    reply_markup: { inline_keyboard: joinGameBtn },
   });
 
   const countdownInterval = setInterval(() => {
@@ -256,11 +318,27 @@ bot.on("message", async (ctx) => {
         replyMessage.message_id,
         `${newGameMsg} 
         Starts in ${remainingSeconds}s...
-        Joined Player ${ctx.from?.username}`,
+        Joined Player ${player}`,
         {
-          reply_markup: joinGameBtn,
+          reply_markup: { inline_keyboard: joinGameBtn },
         }
       );
+      if (player.length >= 10) {
+        clearInterval(countdownInterval);
+        bot.api.editMessageText(
+          ctx.chat.id,
+          replyMessage.message_id,
+          `Playing Game
+          Cost: 10$
+          Players: ${player}
+          Turn: ${player[turn]}
+          Clicked: ${clicked}
+          `,
+          {
+            reply_markup: { inline_keyboard: gameButtons },
+          }
+        );
+      }
     } else {
       clearInterval(countdownInterval);
       bot.api.editMessageText(
@@ -268,26 +346,16 @@ bot.on("message", async (ctx) => {
         replyMessage.message_id,
         `Playing Game
         Cost: 10$
-        Players:
+        Players: ${player}
+        Turn: ${player[turn]}
+        Clicked: ${clicked}
         `,
         {
-          reply_markup: { inline_keyboard: buttons },
+          reply_markup: { inline_keyboard: gameButtons },
         }
       );
     }
   }, 1000);
-});
-
-bot.on("callback_query", async (ctx) => {
-  const buttonClicked = ctx.callbackQuery?.data;
-
-  if (buttonClicked === "button1") {
-    await ctx.answerCallbackQuery("Clicked 'Pull Trigger'");
-  } else if (buttonClicked === "button2") {
-    await ctx.answerCallbackQuery("Clicked 'Pass'");
-  } else if (buttonClicked === "button3") {
-    await ctx.answerCallbackQuery("Clicked 'Spin Chamber'");
-  }
 });
 
 // Start the server
